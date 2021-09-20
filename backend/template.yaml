@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Simple OTP stack
+
+Parameters:
+  Stage:
+    Type: String
+    Default: 'dev'
+  SesFromAddress:
+    Type: String
+  OtpTokenLength:
+    Type: Number
+    Default: 6
+  OtpExpiryInMinutes:
+    Type: Number
+    Default: 2
+
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: 
+        Ref: Stage
+      Cors:
+        AllowMethods: "'OPTIONS,POST,GET'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  DynamodbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: expiryAt
+          AttributeType: N
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: expiryAt
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      TimeToLiveSpecification:
+          AttributeName: expiryAt
+          Enabled: True
+
+  GenerateOtpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: generate-otp/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          DB_TABLE: !Ref DynamodbTable
+          TOKEN_LENGTH: !Ref OtpTokenLength
+          OTP_EXPIRY_MINUTES: !Ref OtpExpiryInMinutes
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref DynamodbTable
+      Events:
+        GenerateUrlApi:
+          Type: Api
+          Properties:
+            Path: /otp/generate
+            Method: post
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  VerifyOtpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: verify-otp/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          DB_TABLE: !Ref DynamodbTable
+      Policies:
+        - Statement:
+          - Sid: SendEmailPermission
+            Effect: Allow
+            Action:
+              - SES:SendEmail
+            Resource: '*'
+            Condition:
+              StringEquals:
+                ses:FromAddress:
+                  - !Ref SesFromAddress
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamodbTable
+      Events:
+        GenerateUrlApi:
+          Type: Api
+          Properties:
+            Path: /otp/verify
+            Method: post
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  SendEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: send-email/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          FROM_ADDRESS: !Ref SesFromAddress
+      Policies:
+        - Statement:
+          - Sid: SendEmailPermission
+            Effect: Allow
+            Action:
+              - SES:SendEmail
+            Resource: '*'
+            Condition:
+              StringEquals:
+                ses:FromAddress:
+                  - !Ref SesFromAddress
+      Events:
+        DynamodbTableStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DynamodbTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
+
+Outputs:
+  ApiBaseUrl:
+    Description: "Base Url"
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  GenerateOtpFunction:
+    Description: "Send Otp function"
+    Value: !GetAtt GenerateOtpFunction.Arn
+  VerifyOtpFunction:
+    Description: "Verify Otp function"
+    Value: !GetAtt VerifyOtpFunction.Arn

@@ -1,0 +1,10 @@
+{
+  "name": "send_otp",
+  "version": "1.0.0",
+  "description": "Verify OTP functionality",
+  "main": "app.js",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "dependencies": {
+  }
+}
