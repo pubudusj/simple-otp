@@ -139,9 +139,3 @@ Outputs:
   ApiBaseUrl:
     Description: "Base Url"
     Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
-  GenerateOtpFunction:
-    Description: "Send Otp function"
-    Value: !GetAtt GenerateOtpFunction.Arn
-  VerifyOtpFunction:
-    Description: "Verify Otp function"
-    Value: !GetAtt VerifyOtpFunction.Arn

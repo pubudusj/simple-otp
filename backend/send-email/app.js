@@ -17,14 +17,11 @@ exports.lambdaHandler = async (event, context) => {
 
 async function sendEmail(otp, toAddress) {
   var htmlBody =
-    `
-      <!DOCTYPE html>
+    `<!DOCTYPE html>
       <html>
         <body>
-          <p>Use this code to validate your login at Simple OTP</p>
-          <p><h3>` +
-    otp +
-    `</h3></p>
+          <p>Use this code to verify your login at Simple OTP</p>
+          <p><h1>` + otp + `</h1></p>
         </body>
       </html>`;
 

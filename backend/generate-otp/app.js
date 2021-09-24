@@ -33,6 +33,10 @@ exports.lambdaHandler = async (event, context) => {
     await docClient.put(params).promise();
     return {
       statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json', 
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         message: "OTP generated",
         data: {
@@ -45,6 +49,10 @@ exports.lambdaHandler = async (event, context) => {
 
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json', 
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         message: "OTP generation failed",
         error: error.stack,

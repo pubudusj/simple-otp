@@ -9,6 +9,10 @@ exports.lambdaHandler = async (event, context) => {
   if (!Body.sessionId || !Body.token) {
     return {
       statusCode: 422,
+      headers: {
+        'Content-Type': 'application/json', 
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         message: "Required fields not found.",
         error: "token and sessionId required",
@@ -24,6 +28,10 @@ exports.lambdaHandler = async (event, context) => {
     ) {
       response = {
         statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json', 
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({
           message: "Validated",
         }),
@@ -31,6 +39,10 @@ exports.lambdaHandler = async (event, context) => {
     } else {
       response = {
         statusCode: 422,
+        headers: {
+          'Content-Type': 'application/json', 
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({
           message: "Cannot validate OTP.",
         }),
@@ -40,6 +52,10 @@ exports.lambdaHandler = async (event, context) => {
     console.log(err);
     response = {
       statusCode: 422,
+      headers: {
+        'Content-Type': 'application/json', 
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({
         message: "Cannot validate OTP.",
       }),
